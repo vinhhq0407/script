@@ -1,0 +1,111 @@
+-- Do not touch anything below
+
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local rcp = rconsoleprint
+local PlaceID = game.PlaceId
+local foundAnything = ""
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+if game.PlaceId ~= 8396586868 then return end
+
+function TPReturner()
+    local Site
+    if foundAnything == "" then
+        Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
+    else
+        Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
+    end
+    local ID = ""
+    if Site.nextPageCursor and Site.nextPageCursor ~= "null" and Site.nextPageCursor ~= nil then
+        foundAnything = Site.nextPageCursor
+    end
+    local num = 0;
+    for i,v in pairs(Site.data) do
+        local Possible = true
+        ID = tostring(v.id)
+        if v.playing < _G.MaxPlayer then
+            pcall(function()
+                game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, ID, game.Players.LocalPlayer)
+            end)
+        end
+    end
+end
+ 
+function Teleport()
+    while task.wait() do
+        pcall(function()
+            TPReturner()
+            if foundAnything ~= "" then
+                TPReturner()
+            end
+        end)
+    end
+end
+
+function IsFruit()
+    for i, v in pairs(workspace.Map.Islands:GetDescendants()) do
+        if v:IsA("Tool") then
+            return true
+        end
+    end
+    return false
+end
+
+function Tween(a)
+    local plr = LocalPlayer.Character.HumanoidRootPart
+
+    if plr then
+        if (plr.Position - a.Position).Magnitude > 50 then
+            local Time = (plr.Position - a.Position).Magnitude / 300        
+            local b = game:GetService("TweenService"):Create(plr,TweenInfo.new(Time,Enum.EasingStyle.Linear), {CFrame = a})
+            b:Play()
+            wait(Time)
+        else
+            plr.CFrame = a
+        end
+    end
+end
+
+rconsolename("Uzu's Fruit Finder")
+
+local c = "@@CYAN@@"
+local y = "@@YELLOW@@"
+local w = "@@WHITE@@"
+local g = "@@GREEN@@"
+local b = "@@BLUE@@"  
+local r = "@@RED@@"
+
+task.wait(2)
+
+task.spawn(function()
+    while task.wait(1) do
+        if not _G.AutoDetectFruit then break end
+        pcall(function()
+            if _G.HideName then
+                local HumanoidRootPart = LocalPlayer.Character.HumanoidRootPart
+                if HumanoidRootPart:FindFirstChild("OverheadUI") then
+                    HumanoidRootPart.OverheadUI:Destroy()
+                end
+            end
+            rcp(c) rcp(LocalPlayer.PlayerGui.MainGui.NoMove.ServerAgeFrame.ServerAge.Text..'\n')
+            rcp(g) rcp("Job Id: ")
+            rcp(w) rcp(game.JobId .. '\n')
+            if IsFruit() then
+                rcp(b) rcp("Fruit Detected! \n")
+                for i, v in pairs(workspace.Map.Islands:GetDescendants()) do
+                    if v:IsA("Tool") then
+                        rcp(y) rcp("Location : ")
+                        rcp(w) rcp(v:GetFullName()..'\n')
+                        local tele = v:FindFirstChildWhichIsA("BasePart")
+                        Tween(tele.CFrame)
+                    end
+                end
+            else
+                rcp(r) rcp("No Fruit Detected :( \n")
+                rcp(w) rcp("Joining Another Server.. \n")
+                rcp("\n")
+                Teleport()
+            end
+        end)
+    end
+end)
